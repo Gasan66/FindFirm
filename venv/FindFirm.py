@@ -113,62 +113,66 @@ with open('INN.txt', 'r') as inf, open('Data_org_ex', 'w') as ouf:
         inn = inf.readline().strip()
         # inn = '3604020510'
         requisites_org = find_org_requisites(inn)
-        name_org = requisites_org[0]
-        opf_org = requisites_org[1]
-        okved_org = requisites_org[2]
 
-        # name_org = 'МОНТАЖНИК'
-        adress_list = find_org_loc(name_org, 'Воронеж')
-        # adress_list = example
-        # print(inn, name_org)
-        # print(adress_list)
-        for adress in adress_list:
-            # print(adress)
-            # for element in adress:
-            # ouf.writelines(str(adress[0]) + ';' + str(adress[1]) + ';' + str(adress[2]))
-            # ouf.writelines(inn + ';' + name_org + '\n')
-            if adress[0] is not None:
-                ouf.writelines(adress[0] + ';')
+        if requisites_org is not 'Have not found':
+            name_org = requisites_org[0]
+            opf_org = requisites_org[1]
+            okved_org = requisites_org[2]
+
+            # name_org = 'МОНТАЖНИК'
+            adress_list = find_org_loc(name_org, 'Воронеж')
+            # adress_list = example
+            # print(inn, name_org)
+            # print(adress_list)
+            for adress in adress_list:
+                # print(adress)
+                # for element in adress:
+                # ouf.writelines(str(adress[0]) + ';' + str(adress[1]) + ';' + str(adress[2]))
+                # ouf.writelines(inn + ';' + name_org + '\n')
+                if adress[0] is not None:
+                    ouf.writelines(adress[0] + ';')
+                else:
+                    ouf.writelines('Have not found' + ';')
+
+                if adress[1] is not None:
+                    ouf.writelines(adress[1] + ';')
+                else:
+                    ouf.writelines('Have not found' + ';')
+
+                if adress[2] is not None:
+                    for cat in adress[2]:
+                        ouf.writelines(cat.get('name') + ',')
+                    ouf.writelines(';')
+                else:
+                    ouf.writelines('Have not found' + ';')
+
+                if adress[3] is not None:
+                    for tel in adress[3]:
+                        ouf.writelines(tel.get('formatted') + ',')
+                    ouf.writelines(';')
+                else:
+                    ouf.writelines('Have not found' + ';')
+
+                if adress[4] is not None:
+                    ouf.writelines(adress[4].get('text') + ';')
+                else:
+                    ouf.writelines('Have not found' + ';')
+
+                if adress[5] is not None:
+                    for coordinate in adress[5]:
+                        ouf.writelines(str(coordinate) + ',')
+                else:
+                    ouf.writelines('Have not found')
+
+                ouf.writelines(inn + ';')
+                ouf.writelines(okved_org + ';')
+                ouf.writelines(opf_org)
+
+
+                # ouf.writelines(str('\n').join(map(str, adress[2].get('name'))))
+                ouf.writelines('\n')
             else:
-                ouf.writelines('Have not found' + ';')
-
-            if adress[1] is not None:
-                ouf.writelines(adress[1] + ';')
-            else:
-                ouf.writelines('Have not found' + ';')
-
-            if adress[2] is not None:
-                for cat in adress[2]:
-                    ouf.writelines(cat.get('name') + ',')
-                ouf.writelines(';')
-            else:
-                ouf.writelines('Have not found' + ';')
-
-            if adress[3] is not None:
-                for tel in adress[3]:
-                    ouf.writelines(tel.get('formatted') + ',')
-                ouf.writelines(';')
-            else:
-                ouf.writelines('Have not found' + ';')
-
-            if adress[4] is not None:
-                ouf.writelines(adress[4].get('text') + ';')
-            else:
-                ouf.writelines('Have not found' + ';')
-
-            if adress[5] is not None:
-                for coordinate in adress[5]:
-                    ouf.writelines(str(coordinate) + ',')
-            else:
-                ouf.writelines('Have not found')
-
-            ouf.writelines(inn + ';')
-            ouf.writelines(okved_org + ';')
-            ouf.writelines(opf_org)
-
-
-            # ouf.writelines(str('\n').join(map(str, adress[2].get('name'))))
-            ouf.writelines('\n')
+                ouf.writelines('Have not found' + '\n')
         i += 1
         print(i)
 #
