@@ -17,7 +17,10 @@ yandex_key = {'true': 'aafff3ab-15a3-489a-b129-e1caf80c6c8e'
                           , '786386b9-13e7-4526-ac14-885cbbab24ae'
                           , '11c449dc-8e6b-4a01-84d0-066975266334'
                           , 'f2106ce9-2cc7-4a12-9be4-5f7129fbcd5b'
-                          , 'c0bdf248-ac07-4aaf-9774-50799f79d66d']}
+                          , 'c0bdf248-ac07-4aaf-9774-50799f79d66d'
+                          , 'e2d13b8c-e2c8-4564-b7a4-a1a2c7419899'
+                          , '33a854fd-c860-4f33-a9cc-9f76665a982c'
+                          , 'c12b2181-2786-44c5-a923-542f553ae810']}
 
 
 def find_org_requisites(inn):
@@ -42,13 +45,20 @@ def find_org_requisites(inn):
             isKeyGood = True
     # print(res_inn)
     if len(res_inn.get('suggestions')) != 0:
-        name_org = [res_inn.get('suggestions')[0].get('data').get('name').get('full'),
-                    res_inn.get('suggestions')[0].get('data').get('opf').get('short'),
-                    res_inn.get('suggestions')[0].get('data').get('okved')]
+        dadata_name = res_inn.get('suggestions')[0].get('data').get('name').get('full')
+        if res_inn.get('suggestions')[0].get('data').get('opf') is not None:
+            dadata_opf = res_inn.get('suggestions')[0].get('data').get('opf').get('short')
+        else:
+            dadata_opf = 'Have not found'
+        if res_inn.get('suggestions')[0].get('data').get('okved') is not None:
+            dadata_okved = res_inn.get('suggestions')[0].get('data').get('okved')
+        else:
+            dadata_okved = 'Have not found'
+        requisites = [dadata_name, dadata_opf, dadata_okved]
     else:
-        name_org = 'Have not found'
-    # print(name_org)
-    return name_org
+        requisites = 'Have not found'
+    # print(requisites)
+    return requisites
 
 
 def find_org_loc(name, city):
@@ -114,7 +124,7 @@ with open('INN.txt', 'r') as inf, open('Data_org_ex', 'w') as ouf:
     i = 0
     while i < 2000:
         inn = inf.readline().strip()
-        # inn = '366400224362'
+        # inn = '3618003909'
         requisites_org = find_org_requisites(inn)
         # print(requisites_org)
         if requisites_org is not 'Have not found':
