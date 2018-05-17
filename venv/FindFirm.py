@@ -281,7 +281,8 @@ with open('TrueINN', 'r') as inf, open('Data_Main', 'w') as main_ouf, open('Data
                         'Coordinates' + ';' +
                         'INN' + ';' +
                         'OKVED' + ';' +
-                        'OPF' + '\n')
+                        'OPF' +
+                        'City' + '\n')
 
     filial_ouf.writelines('NameDadata' + ';' +
                           'NameDadataShort' + ';' +
@@ -294,7 +295,8 @@ with open('TrueINN', 'r') as inf, open('Data_Main', 'w') as main_ouf, open('Data
                           'Address​_value' + ';' +
                           'Address​_unrestricted_value' + ';' +
                           'Geo_lat' + ';' +
-                          'Geo_lon' + '\n')
+                          'Geo_lon' +
+                          'City' + '\n')
     i = 0
     while i < 50000:
         inn, city = inf.readline().split()
@@ -353,10 +355,11 @@ with open('TrueINN', 'r') as inf, open('Data_Main', 'w') as main_ouf, open('Data
 
                             main_ouf.writelines(inn + ';')
                             main_ouf.writelines(okved_org + ';')
-                            main_ouf.writelines(opf_org)
+                            main_ouf.writelines(opf_org + ';')
+                            main_ouf.writelines(city)
                             main_ouf.writelines('\n')
                     else:
-                        main_ouf.writelines(name_org + ';' + ('Have not found;' * 6) + inn + ';' + okved_org + ';' + opf_org + '\n')
+                        main_ouf.writelines(name_org + ';' + ('Have not found;' * 6) + inn + ';' + okved_org + ';' + opf_org + ';' + city + '\n')
 
                 filial_ouf.writelines(requisite_org.get('name') + ';' +
                                           requisite_org.get('name_short') + ';' +
@@ -369,7 +372,8 @@ with open('TrueINN', 'r') as inf, open('Data_Main', 'w') as main_ouf, open('Data
                                           str(requisite_org.get('address_value')).replace(';', ',') + ';' +
                                           str(requisite_org.get('address_unrestricted_value')).replace(';', ',') + ';' +
                                           str(requisite_org.get('address_geo_lat')) + ';' +
-                                          str(requisite_org.get('address_geo_lon')) + '\n')
+                                          str(requisite_org.get('address_geo_lon')) + ';' +
+                                          city + '\n')
         elif requisites_org != 'Have not found':
             for requisite_org in requisites_org:
                 name_org = requisite_org.get('name')
@@ -421,13 +425,14 @@ with open('TrueINN', 'r') as inf, open('Data_Main', 'w') as main_ouf, open('Data
 
                         main_ouf.writelines(inn + ';')
                         main_ouf.writelines(okved_org + ';')
-                        main_ouf.writelines(opf_org)
+                        main_ouf.writelines(opf_org + ';')
+                        main_ouf.writelines(city)
                         main_ouf.writelines('\n')
                 else:
                     main_ouf.writelines(
-                        name_org + ';' + ('Have not found;' * 6) + inn + ';' + okved_org + ';' + opf_org + '\n')
+                        name_org + ';' + ('Have not found;' * 6) + inn + ';' + okved_org + ';' + opf_org + ';' + city + '\n')
         else:
-            main_ouf.writelines(('Have not found;' * 7) + inn + ';' + ('Have not found;' * 2) + '\n')
+            main_ouf.writelines(('Have not found;' * 7) + inn + ';' + ('Have not found;' * 2) + ';' + city +'\n')
         i += 1
         print(i)
 
