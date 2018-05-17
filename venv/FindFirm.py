@@ -255,6 +255,9 @@ def find_org_loc(name, city):
             isKeyGood = True
 
     list_org = res.get('features')
+    if list_org is None:
+        list_org_loc.append(['Have not found', 'Have not found', 'Have not found', 'Have not found', 'Have not found', 'Have not found',])
+        return list_org_loc
     list_org_loc = []
     # print(req.url)
 
