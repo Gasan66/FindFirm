@@ -3,9 +3,6 @@ import requests
 import json
 import time
 import mysql.connector
-from sys import getdefaultencoding
-
-getdefaultencoding()
 
 cnx_in = mysql.connector.connect(user='root', password='Gfhjkm1987',
                                  host='127.0.0.1',
@@ -17,7 +14,7 @@ cnx_out = mysql.connector.connect(user='root', password='Gfhjkm1987',
 cursor_in = cnx_in.cursor(dictionary=True)
 cursor_out = cnx_out.cursor()
 
-query = 'SELECT INN, City FROM Input_data LIMIT 5000'
+query = 'SELECT INN, City FROM Input_data WHERE isDone <> 1 LIMIT 50000'
 
 query_filial = ("INSERT INTO output_filial "
            "(NameDadata, NameDadataShort, INN, Branch_type, Branch_count, OPF, Name_full_with_opf, "
@@ -31,6 +28,8 @@ query_main = ("INSERT INTO output_main "
            "Coordinates, INN, OKVED, OPF, City) "
            "VALUES (%(NameDadata)s, %(NameDadataShort)s, %(NameYandex)s, %(Address)s, %(Categories)s, %(Phone)s,"
            " %(Availability)s, %(Coordinates)s, %(INN)s, %(OKVED)s, %(OPF)s, %(City)s)")
+
+query_done = 'UPDATE Input_data SET isDone = 1 WHERE INN = %(INN)s AND City = %(City)s'
 
 start_time = time.time()
 
@@ -543,6 +542,8 @@ for row in cursor_in:
                     , 'City': str(city)}
         cursor_out.execute(query_main, address)
         cnx_out.commit()
+    cursor_out.execute(query_done, row)
+    cnx_out.commit()
     i += 1
     print(i)
 
