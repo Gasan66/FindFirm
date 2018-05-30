@@ -1,3 +1,19 @@
+'''
+Скрипт для поиска адресов организации через Яндекс-Карты.
+Чтение и запись производятся из базы MySQL.
+Используются две функции (find_org_requisites, find_org_addresses).
+Первая функция принимает на вход ИНН и город организации и возвращает список из словарей с реквезитами ЕГРЮЛ, используя
+бесплатный сервич Dadata. В случае, если у организации есть филиалы, то они записываются в отдельную таблицу.
+Ограничения по одному ключу 10 000 запросов в день.
+Вторая функция принимает на вход название организации и город и возвращает список из словарей с адресами организаций.
+В обеих функциях идет перебор ключей пока не будет найден действующий, после конца перебора вылетит ошибка индекса.
+'''
+
+
+
+
+
+
 import dgis
 import requests
 import json
@@ -9,25 +25,26 @@ cnx_in = mysql.connector.connect(user='root', password='Gfhjkm1987',
                                  database='FindFirm')
 
 cnx_out = mysql.connector.connect(user='root', password='Gfhjkm1987',
-                                 host='127.0.0.1',
-                                 database='FindFirm')
+                                  host='127.0.0.1',
+                                  database='FindFirm')
+
 cursor_in = cnx_in.cursor(dictionary=True)
 cursor_out = cnx_out.cursor()
 
-query = 'SELECT INN, City FROM Input_data WHERE isDone <> 1 LIMIT 50000'
+query = 'SELECT INN, City FROM Input_data WHERE isDone <> 1 LIMIT 10'
 
-query_filial = ("INSERT INTO output_filial "
-           "(NameDadata, NameDadataShort, INN, Branch_type, Branch_count, OPF, Name_full_with_opf, "
-           "Name_short_with_opf, Address_value, Address_unrestricted_value, Geo_lat, Geo_lon, OKVED, City) "
-           "VALUES (%(NameDadata)s, %(NameDadataShort)s, %(INN)s, %(Branch_type)s, %(Branch_count)s, %(OPF)s,"
-           " %(Name_full_with_opf)s, %(Name_short_with_opf)s, %(Address_value)s, %(Address_unrestricted_value)s,"
-           " %(Geo_lat)s, %(Geo_lon)s, %(OKVED)s, %(City)s)")
+query_filial = ("INSERT INTO output_filial_copy_1 "
+                "(NameDadata, NameDadataShort, INN, Branch_type, Branch_count, OPF, Name_full_with_opf, "
+                "Name_short_with_opf, Address_value, Address_unrestricted_value, Geo_lat, Geo_lon, OKVED, City) "
+                "VALUES (%(NameDadata)s, %(NameDadataShort)s, %(INN)s, %(Branch_type)s, %(Branch_count)s, %(OPF)s,"
+                " %(Name_full_with_opf)s, %(Name_short_with_opf)s, %(Address_value)s, %(Address_unrestricted_value)s,"
+                " %(Geo_lat)s, %(Geo_lon)s, %(OKVED)s, %(City)s)")
 
-query_main = ("INSERT INTO output_main "
-           "(NameDadata, NameDadataShort, NameYandex, Address, Categories, Phone, Availability, "
-           "Coordinates, INN, OKVED, OPF, City) "
-           "VALUES (%(NameDadata)s, %(NameDadataShort)s, %(NameYandex)s, %(Address)s, %(Categories)s, %(Phone)s,"
-           " %(Availability)s, %(Coordinates)s, %(INN)s, %(OKVED)s, %(OPF)s, %(City)s)")
+query_main = ("INSERT INTO output_main_copy_1 "
+              "(NameDadata, NameDadataShort, NameYandex, Address, Categories, Phone, Availability, "
+              "Coordinates, INN, OKVED, OPF, City) "
+              "VALUES (%(NameDadata)s, %(NameDadataShort)s, %(NameYandex)s, %(Address)s, %(Categories)s, %(Phone)s,"
+              " %(Availability)s, %(Coordinates)s, %(INN)s, %(OKVED)s, %(OPF)s, %(City)s)")
 
 query_done = 'UPDATE Input_data SET isDone = 1 WHERE INN = %(INN)s AND City = %(City)s'
 
@@ -169,16 +186,15 @@ def find_org_requisites(inn, city):
                    , 'Accept': 'application/json'}
         data = {'query': inn}
 
-        req_inn = requests.post(url_inn, data=json.dumps(data), headers=headers)
-        res_inn = json.loads(req_inn.text)
-        # print(res_inn)
-        if res_inn.get('reason') == 'Forbidden':
+        req = requests.post(url_inn, data=json.dumps(data), headers=headers)
+        res = json.loads(req.text)
+        if res.get('reason') == 'Forbidden':
             dadata_key['true'] = dadata_key.get('other')[dadata_key.get('other').index(dadata_key.get('true')) + 1]
         else:
             isKeyGood = True
 
-    if len(res_inn.get('suggestions')) != 0:
-        for suggestion in res_inn.get('suggestions'):
+    if len(res.get('suggestions')) != 0:
+        for suggestion in res.get('suggestions'):
 
             dadata_name = suggestion.get('data').get('name').get('full')
 
@@ -262,7 +278,7 @@ def find_org_requisites(inn, city):
     return requisites
 
 
-def find_org_loc(name, city):
+def find_org_addresses(name, city):
 
     list_org_loc = []
     isKeyGood = False
@@ -285,6 +301,7 @@ def find_org_loc(name, city):
             isKeyGood = True
 
     list_org = res.get('features')
+
     if list_org is None:
         list_org_loc.append({'NameYandex': 'Have not found'
                                 , 'Address': 'Have not found'
@@ -293,14 +310,12 @@ def find_org_loc(name, city):
                                 , 'Availability': 'Have not found'
                                 , 'Coordinates': 'Have not found'})
         return list_org_loc
-    list_org_loc = []
-    # print(req.url)
 
     for org in list_org:
 
-        yandex_categories = ''
-        yandex_phones = ''
-        # yandex_coordinates = ''
+        yandex_categories = 'Have not found'
+        yandex_phones = 'Have not found'
+        yandex_hours = 'Have not found'
 
         if org.get('properties').get('CompanyMetaData').get('name') is not None:
             yandex_name = org.get('properties').get('CompanyMetaData').get('name')
@@ -347,52 +362,33 @@ def find_org_loc(name, city):
     return list_org_loc
 
 
-# main_ouf.writelines('NameDadata' + ';' +
-#                     'NameDadataShort' + ';' +
-#                     'NameYandex' + ';' +
-#                     'address' + ';' +
-#                     'Categories' + ';' +
-#                     'Phone' + ';' +
-#                     'Availability' + ';' +
-#                     'Coordinates' + ';' +
-#                     'INN' + ';' +
-#                     'OKVED' + ';' +
-#                     'OPF' +
-#                     'City' + '\n')
-#
-# filial_ouf.writelines('NameDadata' + ';' +
-#                       'NameDadataShort' + ';' +
-#                       'INN' + ';' +
-#                       'Branch_type' + ';' +
-#                       'Branch_count' + ';' +
-#                       'OPF' + ';' +
-#                       'Name_full_with_opf' + ';' +
-#                       'Name_short_with_opf' + ';' +
-#                       'Address​_value' + ';' +
-#                       'Address​_unrestricted_value' + ';' +
-#                       'Geo_lat' + ';' +
-#                       'Geo_lon' +
-#                       'City' + '\n')
 cursor_in.execute(query)
+
 i = 0
+
 for row in cursor_in:
+
     inn = row.get('INN')
     city = row.get('City')
-    # inn, city = inf.readline().split()
-    # inn = '814071096'
+
     requisites_org = find_org_requisites(inn, city)
+
     if len(requisites_org) > 1:
+
         for requisite_org in requisites_org:
-            name_org = requisite_org.get('NameDadata')
-            name_org_short = requisite_org.get('NameDadataShort')
-            opf_org = requisite_org.get('OPF')
-            okved_org = requisite_org.get('OKVED')
 
             cursor_out.execute(query_filial, requisite_org)
             cnx_out.commit()
 
             if requisite_org.get('Branch_type') == 'MAIN':
-                address_list = find_org_loc(name_org, city)
+
+                name_org = requisite_org.get('NameDadata')
+                name_org_short = requisite_org.get('NameDadataShort')
+                opf_org = requisite_org.get('OPF')
+                okved_org = requisite_org.get('OKVED')
+
+                address_list = find_org_addresses(name_org, city)
+
                 for address in address_list:
 
                     address['NameDadata'] = name_org
@@ -404,73 +400,16 @@ for row in cursor_in:
 
                     cursor_out.execute(query_main, address)
                     cnx_out.commit()
-                    # main_ouf.writelines(name_org + ';')
-                    # main_ouf.writelines(name_org_short + ';')
-                    #
-                    # if address[0] is not None:
-                    #     main_ouf.writelines(address[0] + ';')
-                    # else:
-                    #     main_ouf.writelines('Have not found' + ';')
-                    #
-                    # if address[1] is not None:
-                    #     main_ouf.writelines(address[1] + ';')
-                    # else:
-                    #     main_ouf.writelines('Have not found' + ';')
-                    #
-                    # if address[2] is not None:
-                    #     for cat in address[2]:
-                    #         main_ouf.writelines(cat.get('name') + ',')
-                    #     main_ouf.writelines(';')
-                    # else:
-                    #     main_ouf.writelines('Have not found' + ';')
-                    #
-                    # if address[3] is not None:
-                    #     for tel in address[3]:
-                    #         main_ouf.writelines(tel.get('formatted') + ',')
-                    #     main_ouf.writelines(';')
-                    # else:
-                    #     main_ouf.writelines('Have not found' + ';')
-                    #
-                    # if address[4] is not None:
-                    #     main_ouf.writelines(str(address[4].get('text')).replace(';', ',') + ';')
-                    # else:
-                    #     main_ouf.writelines('Have not found' + ';')
-                    #
-                    # if address[5] is not None:
-                    #     for coordinate in address[5]:
-                    #         main_ouf.writelines(str(coordinate) + ',')
-                    #     main_ouf.writelines(';')
-                    # else:
-                    #     main_ouf.writelines('Have not found')
-                    #
-                    # main_ouf.writelines(inn + ';')
-                    # main_ouf.writelines(okved_org + ';')
-                    # main_ouf.writelines(opf_org + ';')
-                    # main_ouf.writelines(city)
-                    # main_ouf.writelines('\n')
 
-
-                # filial_ouf.writelines(requisite_org.get('name') + ';' +
-                #                       requisite_org.get('name_short') + ';' +
-                #                       str(inn) + ';' +
-                #                       requisite_org.get('branch_type') + ';' +
-                #                       str(requisite_org.get('branch_count')) + ';' +
-                #                       requisite_org.get('opf') + ';' +
-                #                       requisite_org.get('name_full_with_opf') + ';' +
-                #                       requisite_org.get('name_short_with_opf') + ';' +
-                #                       str(requisite_org.get('address_value')).replace(';', ',') + ';' +
-                #                       str(requisite_org.get('address_unrestricted_value')).replace(';', ',') + ';' +
-                #                       str(requisite_org.get('address_geo_lat')) + ';' +
-                #                       str(requisite_org.get('address_geo_lon')) + ';' +
-                #                       city + '\n')
     elif requisites_org != ['Have not found']:
+
         for requisite_org in requisites_org:
             name_org = requisite_org.get('NameDadata')
             name_org_short = requisite_org.get('NameDadataShort')
             opf_org = requisite_org.get('OPF')
             okved_org = requisite_org.get('OKVED')
 
-            address_list = find_org_loc(name_org, city)
+            address_list = find_org_addresses(name_org, city)
 
             for address in address_list:
 
@@ -483,51 +422,8 @@ for row in cursor_in:
 
                 cursor_out.execute(query_main, address)
                 cnx_out.commit()
-                # main_ouf.writelines(name_org + ';')
-                # main_ouf.writelines(name_org_short + ';')
-                #
-                # if address[0] is not None:
-                #     main_ouf.writelines(address[0] + ';')
-                # else:
-                #     main_ouf.writelines('Have not found' + ';')
-                #
-                # if address[1] is not None:
-                #     main_ouf.writelines(address[1] + ';')
-                # else:
-                #     main_ouf.writelines('Have not found' + ';')
-                #
-                # if address[2] is not None:
-                #     for cat in address[2]:
-                #         main_ouf.writelines(cat.get('name') + ',')
-                #     main_ouf.writelines(';')
-                # else:
-                #     main_ouf.writelines('Have not found' + ';')
-                #
-                # if address[3] is not None:
-                #     for tel in address[3]:
-                #         main_ouf.writelines(tel.get('formatted') + ',')
-                #     main_ouf.writelines(';')
-                # else:
-                #     main_ouf.writelines('Have not found' + ';')
-                #
-                # if address[4] is not None:
-                #     main_ouf.writelines(str(address[4].get('text')).replace(';', ',') + ';')
-                # else:
-                #     main_ouf.writelines('Have not found' + ';')
-                #
-                # if address[5] is not None:
-                #     for coordinate in address[5]:
-                #         main_ouf.writelines(str(coordinate) + ',')
-                #     main_ouf.writelines(';')
-                # else:
-                #     main_ouf.writelines('Have not found')
-                #
-                # main_ouf.writelines(inn + ';')
-                # main_ouf.writelines(okved_org + ';')
-                # main_ouf.writelines(opf_org + ';')
-                # main_ouf.writelines(city)
-                # main_ouf.writelines('\n')
     else:
+
         address = {'NameDadata': 'Have not found'
                     , 'NameDadataShort': 'Have not found'
                     , 'NameYandex': 'Have not found'
@@ -540,10 +436,13 @@ for row in cursor_in:
                     , 'OPF': 'Have not found'
                     , 'OKVED': 'Have not found'
                     , 'City': str(city)}
+
         cursor_out.execute(query_main, address)
         cnx_out.commit()
+
     cursor_out.execute(query_done, row)
     cnx_out.commit()
+
     i += 1
     print(i)
 
