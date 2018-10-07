@@ -1,5 +1,6 @@
 import requests
 import json
+import pprint
 # import time
 # import mysql.connector
 
@@ -128,5 +129,5 @@ params_loc = {'apikey': yandex_key.get('true'),
 
 req = requests.get(url_loc, params=params_loc)
 res = json.loads(req.text)
-print(url_loc)
-print(res)
+print(pprint.pprint(res))
+# print(json.dumps(res, sort_keys=True, indent=4, separators=(',', ': ')))
