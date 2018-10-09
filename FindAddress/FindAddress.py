@@ -162,7 +162,6 @@ for row in cursor_in:
     req = requests.get(url_loc, params=params_loc)
     res = json.loads(req.text)
 
-
     for obj in res.get('response').get('GeoObjectCollection').get('featureMember'):
         yandex_address['id_address'] = id
         yandex_address['value'] = str(obj.get('GeoObject').get('metaDataProperty').get('GeocoderMetaData').get('Address'))
