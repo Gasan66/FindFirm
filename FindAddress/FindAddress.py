@@ -1,9 +1,28 @@
 import requests
 import json
 import pprint
-# import time
-# import mysql.connector
+import time
+import mysql.connector
 
+
+cnx_in = mysql.connector.connect(user='admin', password='Qwaszx!2',
+                                 host='100.124.7.179',
+                                 database='FindAddress')
+
+cnx_out = mysql.connector.connect(user='admin', password='Qwaszx!2',
+                                  host='100.124.7.179',
+                                  database='FindAddress')
+
+cursor_in = cnx_in.cursor(dictionary=True)
+cursor_out = cnx_out.cursor()
+
+query = 'SELECT id, value FROM FindAddress.address WHERE isDone <> 1 LIMIT 20000'
+
+query_yandex_address = ("INSERT INTO yandex_address "
+                        "(id, value, id_address) "
+                        "VALUES (%(id)s, %(value)s, %(id_address)s)")
+
+query_done = 'UPDATE address SET isDone = 1 WHERE id = %(id)s'
 
 yandex_key = {'true': '721939bf-b014-4f83-bf66-718b6fc1699d'
               , 'other': ['0cbc01a5-fe7e-4ada-b587-37f5180b5af3'
@@ -117,17 +136,46 @@ yandex_key = {'true': '721939bf-b014-4f83-bf66-718b6fc1699d'
                             , '897f76e7-c316-481b-beac-fb5ca3e6519d'
                             , '77e3c160-2133-4268-b010-ce8e5262f99a']}
 
-url_loc = 'https://geocode-maps.yandex.ru/1.x'
-params_loc = {'apikey': yandex_key.get('true'),
-              'geocode': 'Москва, Тверская улица, дом 7',
-              'format': 'json',
-              # 'text': name + ',' + ' ' + city,
-              # 'type': 'biz',
-              'lang': 'ru-RU',
-              # 'results': '500',
-              }
 
-req = requests.get(url_loc, params=params_loc)
-res = json.loads(req.text)
-print(pprint.pprint(res))
+yandex_address = {}
+yandex_address_id = 1
+
+cursor_in.execute(query)
+
+start_time = time.time()
+
+for row in cursor_in:
+    print(yandex_address_id)
+    address = row.get('value')
+    id = row.get('id')
+
+    url_loc = 'https://geocode-maps.yandex.ru/1.x'
+    params_loc = {'apikey': yandex_key.get('true'),
+                  'geocode': address,
+                  'format': 'json',
+                  # 'text': name + ',' + ' ' + city,
+                  # 'type': 'biz',
+                  'lang': 'ru-RU',
+                  # 'results': '500',
+                  }
+
+    req = requests.get(url_loc, params=params_loc)
+    res = json.loads(req.text)
+
+
+    for obj in res.get('response').get('GeoObjectCollection').get('featureMember'):
+        yandex_address['id_address'] = id
+        yandex_address['value'] = str(obj.get('GeoObject').get('metaDataProperty').get('GeocoderMetaData').get('Address'))
+        yandex_address['id'] = yandex_address_id
+
+        cursor_out.execute(query_yandex_address, yandex_address)
+        cnx_out.commit()
+
+        yandex_address_id += 1
+        # print(yandex_address['id'], yandex_address['value'])
+
+    cursor_out.execute(query_done, row)
+    cnx_out.commit()
 # print(json.dumps(res, sort_keys=True, indent=4, separators=(',', ': ')))
+
+print("--- %s seconds ---" % (time.time() - start_time))
