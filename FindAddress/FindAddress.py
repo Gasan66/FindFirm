@@ -162,16 +162,26 @@ for row in cursor_in:
     req = requests.get(url_loc, params=params_loc)
     res = json.loads(req.text)
 
-    for obj in res.get('response').get('GeoObjectCollection').get('featureMember'):
+    try:
+        for obj in res.get('response').get('GeoObjectCollection').get('featureMember'):
+            yandex_address['id_address'] = id
+            yandex_address['value'] = str(obj.get('GeoObject').get('metaDataProperty').get('GeocoderMetaData').get('Address'))
+            yandex_address['id'] = yandex_address_id
+
+            cursor_out.execute(query_yandex_address, yandex_address)
+            cnx_out.commit()
+
+            yandex_address_id += 1
+            # print(yandex_address['id'], yandex_address['value'])
+    except AttributeError:
         yandex_address['id_address'] = id
-        yandex_address['value'] = str(obj.get('GeoObject').get('metaDataProperty').get('GeocoderMetaData').get('Address'))
+        yandex_address['value'] = str('Empty')
         yandex_address['id'] = yandex_address_id
 
         cursor_out.execute(query_yandex_address, yandex_address)
         cnx_out.commit()
 
         yandex_address_id += 1
-        # print(yandex_address['id'], yandex_address['value'])
 
     cursor_out.execute(query_done, row)
     cnx_out.commit()
