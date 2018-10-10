@@ -13,11 +13,11 @@ import urllib.parse
 # address = '58 Parker Street London'
 
 # t = nom.query(address)
-# url = 'https://nominatim.openstreetmap.org/search?format=json&q=москва,%20кутузовский%20проспект,%2032'
-# req = requests.get(url)
-# res = req.json()
+s = 'екатеринбург, куйбышева 67'
+url = 'https://nominatim.openstreetmap.org/search?format=json&q={0}'.format(urllib.parse.quote(s))
+req = requests.get(url)
+res = req.json()
 # response = urllib2.urlopen(url)
-# pprint.pprint(res)
-s = 'москва'
-print(urllib.parse.quote(s))
+pprint.pprint(res)
+# print(url)
 # print(urllib.parse.quote(s.decode('utf8').encode('cp1251')))
