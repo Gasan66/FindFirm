@@ -16,7 +16,7 @@ cnx_out = mysql.connector.connect(user='admin', password='Qwaszx!2',
 cursor_in = cnx_in.cursor(dictionary=True)
 cursor_out = cnx_out.cursor()
 
-query = 'SELECT id, value FROM FindAddress.address WHERE isDone <> 1 LIMIT 20000'
+query = 'SELECT id, value FROM FindAddress.address WHERE isDone <> 1'
 
 query_yandex_address = ("INSERT INTO yandex_address "
                         "(id, value, id_address) "
@@ -24,7 +24,7 @@ query_yandex_address = ("INSERT INTO yandex_address "
 
 query_done = 'UPDATE address SET isDone = 1 WHERE id = %(id)s'
 
-yandex_key = {'true': '721939bf-b014-4f83-bf66-718b6fc1699d'
+yandex_key = {'true': '82cc9714-5d72-4837-8090-5d99f76b6d3c'
               , 'other': ['0cbc01a5-fe7e-4ada-b587-37f5180b5af3'
                             , 'aafff3ab-15a3-489a-b129-e1caf80c6c8e'
                             , 'b8f5a7f2-9a0c-4aa6-ab3f-5681ff78ff67'
@@ -145,9 +145,11 @@ cursor_in.execute(query)
 start_time = time.time()
 
 for row in cursor_in:
-    print(yandex_address_id)
+
     address = row.get('value')
     id = row.get('id')
+
+    print(id)
 
     url_loc = 'https://geocode-maps.yandex.ru/1.x'
     params_loc = {'apikey': yandex_key.get('true'),
