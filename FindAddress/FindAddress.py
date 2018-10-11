@@ -24,7 +24,7 @@ query_yandex_address = ("INSERT INTO yandex_address "
 
 query_done = 'UPDATE address SET isDone = 1 WHERE id = %(id)s'
 
-yandex_key = {'true': '82cc9714-5d72-4837-8090-5d99f76b6d3c'
+yandex_key = {'true': '0be20c72-8a9d-4fc0-be55-320d5048a68e'
               , 'other': ['0cbc01a5-fe7e-4ada-b587-37f5180b5af3'
                             , 'aafff3ab-15a3-489a-b129-e1caf80c6c8e'
                             , 'b8f5a7f2-9a0c-4aa6-ab3f-5681ff78ff67'
@@ -164,29 +164,33 @@ for row in cursor_in:
     req = requests.get(url_loc, params=params_loc)
     res = json.loads(req.text)
 
-    try:
-        for obj in res.get('response').get('GeoObjectCollection').get('featureMember'):
+    if req.status_code != 403:
+
+        try:
+            for obj in res.get('response').get('GeoObjectCollection').get('featureMember'):
+                yandex_address['id_address'] = id
+                yandex_address['value'] = str(obj.get('GeoObject').get('metaDataProperty').get('GeocoderMetaData').get('Address'))
+                yandex_address['id'] = yandex_address_id
+
+                cursor_out.execute(query_yandex_address, yandex_address)
+                cnx_out.commit()
+
+                yandex_address_id += 1
+                # print(yandex_address['id'], yandex_address['value'])
+        except AttributeError:
             yandex_address['id_address'] = id
-            yandex_address['value'] = str(obj.get('GeoObject').get('metaDataProperty').get('GeocoderMetaData').get('Address'))
+            yandex_address['value'] = str('Empty')
             yandex_address['id'] = yandex_address_id
 
             cursor_out.execute(query_yandex_address, yandex_address)
             cnx_out.commit()
 
             yandex_address_id += 1
-            # print(yandex_address['id'], yandex_address['value'])
-    except AttributeError:
-        yandex_address['id_address'] = id
-        yandex_address['value'] = str('Empty')
-        yandex_address['id'] = yandex_address_id
 
-        cursor_out.execute(query_yandex_address, yandex_address)
+        cursor_out.execute(query_done, row)
         cnx_out.commit()
-
-        yandex_address_id += 1
-
-    cursor_out.execute(query_done, row)
-    cnx_out.commit()
+    else:
+        break
 # print(json.dumps(res, sort_keys=True, indent=4, separators=(',', ': ')))
 
 print("--- %s seconds ---" % (time.time() - start_time))
