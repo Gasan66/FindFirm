@@ -1,8 +1,8 @@
 import requests
 import json
-import pprint
+# import pprint
 import time
-import mysql.connector
+# import mysql.connector
 
 
 cnx_in = mysql.connector.connect(user='admin', password='Qwaszx!2',
@@ -22,7 +22,7 @@ query_yandex_address = ("INSERT INTO yandex_address "
                         "(id, value, id_address) "
                         "VALUES (%(id)s, %(value)s, %(id_address)s)")
 
-query_done = 'UPDATE address SET isDone = 1 WHERE id = %(id)s'
+query_done = 'UPDATE address SET isDone = 1 WHERE id_address = %(id)s'
 
 yandex_key = {'true': '0be20c72-8a9d-4fc0-be55-320d5048a68e'
               , 'other': ['0cbc01a5-fe7e-4ada-b587-37f5180b5af3'
